@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\ApiControllerLoginRequest;
 use App\Http\Requests\Api\ApiControllerRegisterRequest;
 use App\Models\User;
 use http\Client\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class ApiController extends Controller
@@ -28,9 +30,30 @@ class ApiController extends Controller
         ])->setStatusCode(201);
     }
 
-    public function login(Request $request): void
+    public function login(ApiControllerLoginRequest $request): JsonResponse
     {
-        //
+        $loginDetails = [
+            "email" => $request->email,
+            "password" => $request->password,
+        ];
+
+        if(Auth::attempt($loginDetails)){
+            $user = Auth::user();
+
+            $token = $user->createToken("passportToken")->accessToken;
+
+            return response()->json([
+                "status" => true,
+                "message" => "Logged in successfully",
+                "token" => $token
+            ])->setStatusCode(201);
+        }
+
+        return response()->json([
+            "status" => false,
+            "message" => "Invalid login details"
+        ])->setStatusCode(401);
+
     }
 
     public function profile(): void
