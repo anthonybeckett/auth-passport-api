@@ -106,6 +106,35 @@ class ApiControllerTest extends TestCase
         $actualResponse->assertSee("test@test.com");
     }
 
+    public function testUserCannotAccessLogoutRouteWithoutToken(): void
+    {
+        $response = $this->postJson('/api/logout');
+
+        $response->assertStatus(401);
+        $response->assertSee("Unauthenticated");
+    }
+
+    public function testUserCanLogoutUsingToken(): void
+    {
+        Passport::$hashesClientSecrets = false;
+
+        $this->artisan(
+            'passport:client',
+            ['--name' => config('app.name'), '--personal' => null]
+        )->assertSuccessful();
+
+        $response = $this->createAndLoginUser();
+
+        $result = json_decode($response->getContent());
+
+        $actualResponse = $this->post(uri: '/api/logout', headers: [
+            "Authorization" => "Bearer " . $result->token
+        ]);
+
+        $actualResponse->assertStatus(201);
+        $actualResponse->assertSee("Logged out successfully");
+    }
+
     private function createAndLoginUser(): TestResponse
     {
         $this->post('/api/register', [

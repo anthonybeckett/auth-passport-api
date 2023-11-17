@@ -65,8 +65,13 @@ class ApiController extends Controller
         ])->setStatusCode(201);
     }
 
-    public function logout(Request $request): void
+    public function logout(Request $request): JsonResponse
     {
-        //
+        auth()->user()->token()->revoke();
+
+        return response()->json([
+            "status" => true,
+            "message" => "Logged out successfully"
+        ])->setStatusCode(201);
     }
 }
