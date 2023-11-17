@@ -56,9 +56,13 @@ class ApiController extends Controller
 
     }
 
-    public function profile(): void
+    public function profile(): JsonResponse
     {
-        //
+        return response()->json([
+            "status" => true,
+            "message" => "Profile Information",
+            "data" => Auth::user()
+        ])->setStatusCode(201);
     }
 
     public function logout(Request $request): void

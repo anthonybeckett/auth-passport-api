@@ -3,6 +3,7 @@
 namespace Tests\Feature\Controllers\Api;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use Laravel\Passport\Passport;
 use Tests\TestCase;
 
@@ -69,6 +70,44 @@ class ApiControllerTest extends TestCase
             ['--name' => config('app.name'), '--personal' => null]
         )->assertSuccessful();
 
+        $response = $this->createAndLoginUser();
+
+        $response->assertStatus(201);
+        $response->assertSee('message');
+        $response->assertSee('token');
+    }
+
+    public function testUserCannotAccessProfileInformationWithoutToken(): void
+    {
+        $response = $this->getJson('/api/profile');
+
+        $response->assertStatus(401);
+        $response->assertSee("Unauthenticated");
+    }
+
+    public function testUserCanAccessProfileInformationWithToken(): void
+    {
+        Passport::$hashesClientSecrets = false;
+
+        $this->artisan(
+            'passport:client',
+            ['--name' => config('app.name'), '--personal' => null]
+        )->assertSuccessful();
+
+        $response = $this->createAndLoginUser();
+
+        $result = json_decode($response->getContent());
+
+        $actualResponse = $this->getJson('/api/profile', [
+            "Authorization" => "Bearer " . $result->token
+        ]);
+
+        $actualResponse->assertStatus(201);
+        $actualResponse->assertSee("test@test.com");
+    }
+
+    private function createAndLoginUser(): TestResponse
+    {
         $this->post('/api/register', [
             'name' => 'test',
             'email' => 'test@test.com',
@@ -81,8 +120,6 @@ class ApiControllerTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertStatus(201);
-        $response->assertSee('message');
-        $response->assertSee('token');
+        return $response;
     }
 }
